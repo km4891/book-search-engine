@@ -6,6 +6,15 @@ const { use } = require('../routes');
 
 const resolvers = {
     Query: {
+
+        user: async (parent, { _id }) => {
+            return User.findOne({ _id })
+                .select('-__v -password')
+                .populate('username')
+                .populate('bookCount')
+                .populate('savedBooks');
+        },
+
         me: async (parent, args, context) => {
             if (context.user) {
                 const userData = await User.findOne({_id: context.user._id})
@@ -65,7 +74,18 @@ const resolvers = {
 
             throw new AuthenticationError('You need to be logged in!');
         },
-        
+                deleteBook: async (parent, { user, params }, context) => {
+            if (context.user) {
+                const updatedUser = await User.findOneAndUpdate(
+                    { _id: user._id },
+                    { $pull: { savedBooks: { bookId: params.bookId } } },
+                    { new: true }
+                );
+
+                return updatedUser;
+            }
+            throw new AuthenticationError('You need to be logged in!');
+        }
     }
 };
 module.exports = resolvers;
